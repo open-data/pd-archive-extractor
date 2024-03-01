@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+BASEDIR=$(dirname "$0")
+
+python3 ${BASEDIR}/extract_archive.py "$@"
