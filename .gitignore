@@ -1,1 +1,4 @@
 *.code-workspace
+*.pyc
+pd-archive-extractor.egg-info
+pd_archive_extractor.egg-info
