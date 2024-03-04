@@ -101,5 +101,3 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
         error_message('Found %s rows owned by %s.' % (len(rows), org))
 
     temp_dir.cleanup()
-
-extract_rows()

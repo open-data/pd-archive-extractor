@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'pd-extract-archive = pd_archive_extractor.extract_archive',
+            'pd-extract-archive = pd_archive_extractor.extract_archive:extract_rows',
         ],
     },
 )
