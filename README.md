@@ -1,17 +1,14 @@
 # PD Archive Extractor
 
-This repo contains a python module script for the `pd-extract-archive` command. This is a Python3 command to extract Proactive Disclosure records from archive `tar.gz` files for a specific PD type and Organization.
+This repo contains a python module script for the `pd-extract-archive` command. This is a Python command to extract Proactive Disclosure records from archive `tar.gz` files for a specific PD type and Organization.
 
-## Requirements
-
-- Python3
 
 ## Installation
 
 1. Pull the repo into any directory:
     - `git clone https://github.com/open-data/pd-archive-extractor.git`
 1. Navigate into the directory, and install the module via pip:
-    - `cd pd-archive-extractor; python3 -m pip install -e ./;`
+    - `cd pd-archive-extractor; pip install -e ./; pip install -r requirements.txt;`
 
 ## Examples
 
