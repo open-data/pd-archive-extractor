@@ -9,9 +9,7 @@ setup(
     author_email='jesse.vickery@tbs-sct.gc.ca',
     license='MIT',
     packages=['pd_archive_extractor'],
-    install_requires=[
-        'click',
-    ],
+    install_requires=[],
     classifiers=[
         'Programming Language :: Python :: 3',
     ],
