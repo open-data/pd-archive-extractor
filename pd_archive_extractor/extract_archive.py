@@ -71,7 +71,7 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
             clear_stream(extracted_stream)
             return
 
-    if not extracted_stream:
+    if extracted_stream is None:
         error_message('Could not extract %s.csv after all...' % type, verbose=verbose)
         clear_stream(extracted_stream)
         return
