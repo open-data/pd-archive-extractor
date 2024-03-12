@@ -56,23 +56,23 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
 
     with tarfile.open(input.name) as tar:
         try:
-            with tar.extractfile(recombinant_type(tar, type)) as f:
-                if f is None:
-                    error_message('Could not extract %s.csv after all...' % type, verbose=verbose)
-                    return
-                success_message('Looking for rows owned by %s. This might take a while...' % org)
-                headers = []
-                rows = []
-                try:
-                    reader = csv.DictReader(f)
-                    headers = reader.fieldnames
-                    for row in reader:
-                        if row['owner_org'] != org:
-                            continue
-                        rows.append(row)
-                except Exception as e:
-                    error_message('Failed to parse rows from csv.', verbose=verbose)
-                    return
+            f = tar.extractfile(recombinant_type(tar, type))
+            if f is None:
+                error_message('Could not extract %s.csv after all...' % type, verbose=verbose)
+                return
+            success_message('Looking for rows owned by %s. This might take a while...' % org)
+            headers = []
+            rows = []
+            try:
+                reader = csv.DictReader(f)
+                headers = reader.fieldnames
+                for row in reader:
+                    if row['owner_org'] != org:
+                        continue
+                    rows.append(row)
+            except Exception as e:
+                error_message('Failed to parse rows from csv.', verbose=verbose)
+                return
         except Exception as e:
             error_message(e, verbose=verbose)
             return
