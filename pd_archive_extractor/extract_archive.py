@@ -7,17 +7,16 @@ import traceback
 if str is bytes:
     #py2
     import unicodecsv as csv
-    from StringIO import StringIO
 else:
     #py3
     import csv
-    from io import StringIO
 
 
 def clear_stream(stream):
-    # type: (StringIO) -> None
-    stream.seek(0)
-    stream.truncate(0)
+    # type: (io.BufferedReader | None) -> None
+    if stream is not None:
+        stream.seek(0)
+        stream.truncate(0)
 
 
 def error_message(message, verbose=False):
@@ -32,7 +31,7 @@ def success_message(message, verbose=False):
     click.echo("\n\033[0;36m\033[1m%s\033[0;0m\n" % message, err=True)
 
 
-def check_recombinant_type(members, type):
+def recombinant_type(members, type):
     # type: (tarfile.TarFile, str) -> tarfile.TarInfo | None
     csv = None
     for tarinfo in members:
@@ -60,14 +59,13 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
         error_message('Input file %s must be a TAR or TARGZ file.' % input.name, verbose=verbose)
         return
 
-    extracted_stream = StringIO()
+    extracted_stream = None
 
     success_message('Looking through %s for %s.csv' % (input.name, type))
 
     with tarfile.open(input.name) as tar:
         try:
-            check_recombinant_type(tar, type)
-            tar.extractfile('%s.csv' % type, extracted_stream)
+            extracted_stream = tar.extractfile(recombinant_type(tar, type))
         except Exception as e:
             error_message(e, verbose=verbose)
             clear_stream(extracted_stream)
