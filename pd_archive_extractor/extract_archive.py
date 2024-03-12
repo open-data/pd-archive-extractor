@@ -37,7 +37,7 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
         error_message('Output file %s must be a CSV file.' % output.name)
         return
     
-    if input and (not input.name.endswith('.tar') or not input.name.endswith('.tar.gz')):
+    if input and (not input.name.endswith('.tar') and not input.name.endswith('.tar.gz')):
         error_message('Input file %s must be a TAR or TARGZ file.' % input.name)
         return
 
