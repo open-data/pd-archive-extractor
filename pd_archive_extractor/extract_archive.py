@@ -1,16 +1,31 @@
 import click
-import csv
 import tarfile
-import tempfile
 import os
 import sys
 
+if str is bytes:
+    #py2
+    import unicodecsv as csv
+    from StringIO import StringIO
+else:
+    #py3
+    import csv
+    from io import StringIO
+
+
+def clear_stream(stream):
+    # type: (StringIO) -> None
+    stream.seek(0)
+    stream.truncate(0)
+
 
 def error_message(message):
+    # type: (str) -> None
     click.echo("\n\033[1;33m%s\033[0;0m\n" % message, err=True)
 
 
 def success_message(message):
+    # type: (str) -> None
     click.echo("\n\033[0;36m\033[1m%s\033[0;0m\n" % message, err=True)
 
 
@@ -41,28 +56,28 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
         error_message('Input file %s must be a TAR or TARGZ file.' % input.name)
         return
 
-    temp_dir = tempfile.TemporaryDirectory()
+    extracted_stream = StringIO()
 
     success_message('Looking through %s for %s.csv' % (input.name, type))
 
     with tarfile.open(input.name) as tar:
         try:
-            tar.extractall(path=temp_dir.name, members=recombinant_type(tar, type))
+            tar.extractall(path=extracted_stream, members=recombinant_type(tar, type))
         except Exception as e:
             error_message(e)
-            temp_dir.cleanup()
+            clear_stream(extracted_stream)
             return
 
-    archive_csv = os.path.join(temp_dir.name, '%s.csv' % type)
-    if not os.path.isfile(archive_csv):
-        error_message('Could not find the extracted %s.csv after all...' % type)
-        temp_dir.cleanup()
+    if not extracted_stream:
+        error_message('Could not the extracted %s.csv after all...' % type)
+        clear_stream(extracted_stream)
         return
 
     success_message('Looking for rows owned by %s. This might take a while...' % org)
     headers = []
     rows = []
-    with open(archive_csv) as f:
+    extracted_stream.seek(0)
+    with extracted_stream.read() as f:
         try:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
@@ -72,7 +87,7 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
                 rows.append(row)
         except Exception as e:
             error_message('Failed to parse rows from csv.')
-            temp_dir.cleanup()
+            clear_stream(extracted_stream)
             return
 
     if output and rows and headers:
@@ -85,7 +100,7 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
                 writer.writerows(rows)
         except Exception as e:
             error_message('Failed to write to output file %s' % output.name)
-            temp_dir.cleanup()
+            clear_stream(extracted_stream)
             return
     elif rows and headers:
         success_message('Found %s rows owned by %s.' % (len(rows), org))
@@ -95,9 +110,9 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
             writer.writerows(rows)
         except Exception as e:
             error_message('Failed to write to stdout')
-            temp_dir.cleanup()
+            clear_stream(extracted_stream)
             return
     else:
         error_message('Found %s rows owned by %s.' % (len(rows), org))
 
-    temp_dir.cleanup()
+    clear_stream(extracted_stream)
