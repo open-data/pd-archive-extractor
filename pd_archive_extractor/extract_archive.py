@@ -12,13 +12,6 @@ else:
     import csv
 
 
-def clear_stream(stream):
-    # type: (io.BufferedReader | None) -> None
-    if stream is not None:
-        stream.seek(0)
-        stream.truncate(0)
-
-
 def error_message(message, verbose=False):
     # type: (str, bool) -> None
     click.echo("\n\033[1;33m%s\033[0;0m\n" % message, err=True)
@@ -59,38 +52,29 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
         error_message('Input file %s must be a TAR or TARGZ file.' % input.name, verbose=verbose)
         return
 
-    extracted_stream = None
-
     success_message('Looking through %s for %s.csv' % (input.name, type))
 
     with tarfile.open(input.name) as tar:
         try:
-            extracted_stream = tar.extractfile(recombinant_type(tar, type))
+            with tar.extractfile(recombinant_type(tar, type)) as f:
+                if f is None:
+                    error_message('Could not extract %s.csv after all...' % type, verbose=verbose)
+                    return
+                success_message('Looking for rows owned by %s. This might take a while...' % org)
+                headers = []
+                rows = []
+                try:
+                    reader = csv.DictReader(f)
+                    headers = reader.fieldnames
+                    for row in reader:
+                        if row['owner_org'] != org:
+                            continue
+                        rows.append(row)
+                except Exception as e:
+                    error_message('Failed to parse rows from csv.', verbose=verbose)
+                    return
         except Exception as e:
             error_message(e, verbose=verbose)
-            clear_stream(extracted_stream)
-            return
-
-    if extracted_stream is None:
-        error_message('Could not extract %s.csv after all...' % type, verbose=verbose)
-        clear_stream(extracted_stream)
-        return
-
-    success_message('Looking for rows owned by %s. This might take a while...' % org)
-    headers = []
-    rows = []
-    extracted_stream.seek(0)
-    with extracted_stream.read() as f:
-        try:
-            reader = csv.DictReader(f)
-            headers = reader.fieldnames
-            for row in reader:
-                if row['owner_org'] != org:
-                    continue
-                rows.append(row)
-        except Exception as e:
-            error_message('Failed to parse rows from csv.', verbose=verbose)
-            clear_stream(extracted_stream)
             return
 
     if output and rows and headers:
@@ -103,7 +87,6 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
                 writer.writerows(rows)
         except Exception as e:
             error_message('Failed to write to output file %s' % output.name, verbose=verbose)
-            clear_stream(extracted_stream)
             return
     elif rows and headers:
         success_message('Found %s rows owned by %s.' % (len(rows), org))
@@ -113,9 +96,8 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
             writer.writerows(rows)
         except Exception as e:
             error_message('Failed to write to stdout', verbose=verbose)
-            clear_stream(extracted_stream)
             return
     else:
         error_message('Found %s rows owned by %s.' % (len(rows), org), verbose=verbose)
 
-    clear_stream(extracted_stream)
+    
