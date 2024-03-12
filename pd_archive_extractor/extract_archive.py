@@ -32,7 +32,7 @@ def success_message(message, verbose=False):
     click.echo("\n\033[0;36m\033[1m%s\033[0;0m\n" % message, err=True)
 
 
-def recombinant_type(members, type):
+def check_recombinant_type(members, type):
     # type: (tarfile.TarFile, str) -> tarfile.TarInfo | None
     csv = None
     for tarinfo in members:
@@ -66,7 +66,8 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
 
     with tarfile.open(input.name) as tar:
         try:
-            tar.extractfile(recombinant_type(tar, type), extracted_stream)
+            check_recombinant_type(tar, type)
+            tar.extractfile('%s.csv' % type, extracted_stream)
         except Exception as e:
             error_message(e, verbose=verbose)
             clear_stream(extracted_stream)
