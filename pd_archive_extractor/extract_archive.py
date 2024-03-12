@@ -2,6 +2,7 @@ import click
 import tarfile
 import os
 import sys
+import traceback
 
 if str is bytes:
     #py2
@@ -19,23 +20,26 @@ def clear_stream(stream):
     stream.truncate(0)
 
 
-def error_message(message):
-    # type: (str) -> None
+def error_message(message, verbose=False):
+    # type: (str, bool) -> None
     click.echo("\n\033[1;33m%s\033[0;0m\n" % message, err=True)
+    if verbose:
+        traceback.print_exc(file=sys.stderr)
 
 
-def success_message(message):
-    # type: (str) -> None
+def success_message(message, verbose=False):
+    # type: (str, bool) -> None
     click.echo("\n\033[0;36m\033[1m%s\033[0;0m\n" % message, err=True)
 
 
 def recombinant_type(members, type):
+    # type: (tarfile.TarFile, str) -> tarfile.TarInfo | None
     csv = None
     for tarinfo in members:
          if os.path.splitext(tarinfo.name)[0] == type:
              csv = tarinfo
     if csv:
-        yield csv
+        return csv
     else:
         raise Exception('Recombinant type %s not in TAR backup.' % type)
 
@@ -49,11 +53,11 @@ def recombinant_type(members, type):
 def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
 
     if output and not output.name.endswith('.csv'):
-        error_message('Output file %s must be a CSV file.' % output.name)
+        error_message('Output file %s must be a CSV file.' % output.name, verbose=verbose)
         return
     
     if input and (not input.name.endswith('.tar') and not input.name.endswith('.tar.gz')):
-        error_message('Input file %s must be a TAR or TARGZ file.' % input.name)
+        error_message('Input file %s must be a TAR or TARGZ file.' % input.name, verbose=verbose)
         return
 
     extracted_stream = StringIO()
@@ -62,14 +66,14 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
 
     with tarfile.open(input.name) as tar:
         try:
-            tar.extractall(path=extracted_stream, members=recombinant_type(tar, type))
+            tar.extractfile(recombinant_type(tar, type), extracted_stream)
         except Exception as e:
-            error_message(e)
+            error_message(e, verbose=verbose)
             clear_stream(extracted_stream)
             return
 
     if not extracted_stream:
-        error_message('Could not the extracted %s.csv after all...' % type)
+        error_message('Could not extract %s.csv after all...' % type, verbose=verbose)
         clear_stream(extracted_stream)
         return
 
@@ -86,7 +90,7 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
                     continue
                 rows.append(row)
         except Exception as e:
-            error_message('Failed to parse rows from csv.')
+            error_message('Failed to parse rows from csv.', verbose=verbose)
             clear_stream(extracted_stream)
             return
 
@@ -99,7 +103,7 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
                 writer.writeheader()
                 writer.writerows(rows)
         except Exception as e:
-            error_message('Failed to write to output file %s' % output.name)
+            error_message('Failed to write to output file %s' % output.name, verbose=verbose)
             clear_stream(extracted_stream)
             return
     elif rows and headers:
@@ -109,10 +113,10 @@ def extract_rows(type=None, org=None, input=None, output=None, verbose=False):
             writer.writeheader()
             writer.writerows(rows)
         except Exception as e:
-            error_message('Failed to write to stdout')
+            error_message('Failed to write to stdout', verbose=verbose)
             clear_stream(extracted_stream)
             return
     else:
-        error_message('Found %s rows owned by %s.' % (len(rows), org))
+        error_message('Found %s rows owned by %s.' % (len(rows), org), verbose=verbose)
 
     clear_stream(extracted_stream)
